@@ -11,7 +11,6 @@ def get_filmes(search_term=None, page=1):
     base_url = "https://megafilmeshdz.space"
     filmes = []
 
-    url = base_url
     if search_term:
         url = f"{base_url}/?s={search_term.replace(' ', '+')}&page={page}"
     else:
@@ -32,7 +31,7 @@ def get_filmes(search_term=None, page=1):
                 titulo = titulo_tag.get_text(strip=True)
                 capa = capa_tag["src"]
 
-                # Tentativa de extrair iframe para vídeo
+                # Tenta extrair iframe para vídeo
                 filme_page = requests.get(filme_url, headers=HEADERS, timeout=10)
                 filme_soup = BeautifulSoup(filme_page.text, 'html.parser')
                 iframe = filme_soup.find("iframe")
@@ -45,7 +44,7 @@ def get_filmes(search_term=None, page=1):
                     "titulo": titulo,
                     "url": video_link,
                     "capa": capa,
-                    "tmdb": tmdb_link
+                    "tmdb_link": tmdb_link
                 })
 
     except Exception as e:
@@ -53,12 +52,11 @@ def get_filmes(search_term=None, page=1):
             "titulo": "Erro ao buscar filmes",
             "url": None,
             "capa": None,
-            "tmdb": None,
+            "tmdb_link": None,
             "error": str(e)
         })
 
     return filmes
-
 
 @app.route('/', methods=["GET"])
 def index():
@@ -67,6 +65,10 @@ def index():
     filmes = get_filmes(search_term=search, page=page)
     return render_template("index.html", filmes=filmes, search=search, page=page)
 
+@app.route('/favoritos')
+def favoritos():
+    # Página dos favoritos - favoritos gerenciados no localStorage no frontend
+    return render_template('favoritos.html')
 
 handler = Mangum(app)
 
