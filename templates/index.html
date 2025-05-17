@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+  <meta charset="UTF-8" />
+  <title>Filmes - Player Popup</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0; padding: 20px;
+      background: #f0f0f0;
+    }
+    header {
+      margin-bottom: 20px;
+    }
+    #searchForm input[type=text] {
+      padding: 8px;
+      width: 250px;
+      font-size: 16px;
+    }
+    #searchForm button {
+      padding: 8px 12px;
+      font-size: 16px;
+    }
+    .movies-container {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 15px;
+      justify-content: center;
+    }
+    .movie-card {
+      background: white;
+      border-radius: 6px;
+      box-shadow: 0 2px 8px rgb(0 0 0 / 0.15);
+      width: 160px;
+      cursor: pointer;
+      text-align: center;
+      transition: transform 0.2s;
+      position: relative;
+    }
+    .movie-card:hover {
+      transform: scale(1.05);
+    }
+    .movie-card img {
+      width: 100%;
+      border-radius: 6px 6px 0 0;
+      height: 240px;
+      object-fit: cover;
+    }
+    .movie-title {
+      padding: 8px 6px;
+      font-weight: bold;
+      font-size: 14px;
+      height: 40px;
+      overflow: hidden;
+    }
+
+    /* Modal Styles */
+    #playerModal {
+      display: none;
+      position: fixed;
+      top: 0; left: 0;
+      width: 100vw; height: 100vh;
+      background: rgba(0,0,0,0.8);
+      justify-content: center;
+      align-items: center;
+      z-index: 1000;
+      padding: 20px;
+      box-sizing: border-box;
+    }
+    #playerModal.show {
+      display: flex;
+    }
+    #modalContent {
+      background: #222;
+      border-radius: 8px;
+      max-width: 800px;
+      width: 100%;
+      padding: 15px;
+      box-sizing: border-box;
+      color: white;
+      position: relative;
+    }
+    #modalHeader {
+      display: flex;
+      justify-content: flex-end;
+    }
+    #closeBtn {
+      background: transparent;
+      border: none;
+      color: white;
+      font-size: 24px;
+      cursor: pointer;
+      font-weight: bold;
+    }
+    #playerContainer iframe {
+      width: 100%;
+      height: 450px;
+      border: none;
+      border-radius: 6px;
+    }
+    #modalLinks {
+      margin-top: 10px;
+      display: flex;
+      gap: 15px;
+      font-size: 14px;
+    }
+    #modalLinks a {
+      color: #39f;
+      text-decoration: none;
+      background: #111;
+      padding: 6px 12px;
+      border-radius: 4px;
+      transition: background-color 0.3s;
+    }
+    #modalLinks a:hover {
+      background: #222;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <form id="searchForm" action="/" method="GET">
+    <input type="text" name="search" placeholder="Pesquisar filme..." value="{{ search | default('') }}" />
+    <button type="submit">Buscar</button>
+  </form>
+</header>
+
+<main>
+  <div class="movies-container">
+    {% for filme in filmes %}
+    <div class="movie-card" 
+         data-video="{{ filme.url | e }}"
+         data-titulo="{{ filme.titulo | e }}"
+         data-download="{{ filme.download | e }}"
+         title="Clique para ver o trailer ou vídeo">
+      <img src="{{ filme.capa }}" alt="{{ filme.titulo }}" loading="lazy" />
+      <div class="movie-title">{{ filme.titulo }}</div>
+    </div>
+    {% endfor %}
+  </div>
+</main>
+
+<!-- Modal -->
+<div id="playerModal">
+  <div id="modalContent">
+    <div id="modalHeader">
+      <button id="closeBtn">&times;</button>
+    </div>
+    <div id="playerContainer">
+      <iframe id="videoFrame" src="" allowfullscreen></iframe>
+    </div>
+    <div id="modalLinks">
+      <a id="tmdbLink" href="#" target="_blank">Ver sinopse no TMDb</a>
+      <a id="downloadLink" href="#" target="_blank" download>Baixar vídeo</a>
+    </div>
+  </div>
+</div>
+
+<script>
+  const playerModal = document.getElementById('playerModal');
+  const closeBtn = document.getElementById('closeBtn');
+  const tmdbLink = document.getElementById('tmdbLink');
+  const downloadLink = document.getElementById('downloadLink');
+
+  function openPlayer(videoUrl, titulo, downloadUrl) {
+    if (!videoUrl) {
+      alert('Vídeo não disponível para este filme.');
+      return;
+    }
+    const iframe = document.getElementById('videoFrame');
+    iframe.src = videoUrl;
+
+    if (titulo) {
+      const query = encodeURIComponent(titulo);
+      tmdbLink.href = `https://www.themoviedb.org/search?query=${query}`;
+      tmdbLink.style.display = 'inline-block';
+    } else {
+      tmdbLink.style.display = 'none';
+    }
+
+    if (downloadUrl) {
+      downloadLink.href = downloadUrl;
+      downloadLink.style.display = 'inline-block';
+    } else {
+      downloadLink.style.display = 'none';
+    }
+
+    playerModal.classList.add('show');
+  }
+
+  function closePlayer() {
+    const iframe = document.getElementById('videoFrame');
+    iframe.src = "";  // para o vídeo
+    playerModal.classList.remove('show');
+    tmdbLink.href = '#';
+    downloadLink.href = '#';
+  }
+
+  closeBtn.addEventListener('click', closePlayer);
+
+  document.querySelectorAll('.movie-card').forEach(card => {
+    card.addEventListener('click', () => {
+      const videoUrl = card.getAttribute('data-video');
+      const titulo = card.getAttribute('data-titulo');
+      const downloadUrl = card.getAttribute('data-download');
+      openPlayer(videoUrl, titulo, downloadUrl);
+    });
+  });
+
+  playerModal.addEventListener('click', e => {
+    if (e.target === playerModal) {
+      closePlayer();
+    }
+  });
+</script>
+
+</body>
+</html>
+
