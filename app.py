@@ -22,30 +22,22 @@ def get_filmes(search_term=None):
             link_tag = article.find("a", href=True)
             titulo_tag = article.find("h2")
             capa_tag = article.find("img")
-            desc_tag = article.find("div", class_="tmdb-overview")
 
             if link_tag and titulo_tag:
                 filme_url = link_tag["href"]
                 titulo = titulo_tag.get_text(strip=True)
                 capa = capa_tag["src"] if capa_tag else None
-                descricao = desc_tag.get_text(strip=True) if desc_tag else ""
 
                 filme_page = requests.get(filme_url, headers=HEADERS, timeout=10)
                 filme_soup = BeautifulSoup(filme_page.text, 'html.parser')
                 iframe = filme_soup.find("iframe")
                 video_link = iframe["src"] if iframe else None
 
-                # Link direto para download (se termina com mp4 ou mkv)
-                link_baixar = None
-                if video_link and (video_link.endswith(".mp4") or video_link.endswith(".mkv")):
-                    link_baixar = video_link
-
                 filmes.append({
                     "titulo": titulo,
                     "url": video_link,
                     "capa": capa,
-                    "descricao": descricao,
-                    "download": link_baixar
+                    "tmdb_link": f"https://www.themoviedb.org/search?query={titulo.replace(' ', '+')}"
                 })
 
     except Exception as e:
@@ -53,12 +45,10 @@ def get_filmes(search_term=None):
             "titulo": "Erro ao buscar filmes",
             "url": None,
             "capa": None,
-            "descricao": str(e),
-            "download": None
+            "tmdb_link": "#"
         })
 
     return filmes
-
 
 @app.route('/', methods=["GET"])
 def index():
@@ -66,8 +56,15 @@ def index():
     filmes = get_filmes(search_term=search)
     return render_template("index.html", filmes=filmes, search=search)
 
+@app.route('/favoritos')
+def favoritos():
+    # Essa página não carrega dados do servidor, só mostra a UI para gerenciar favoritos no localStorage.
+    return render_template("favoritos.html")
 
 if __name__ == '__main__':
     app.run(debug=True)
+
+
+
 
 
