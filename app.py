@@ -1,7 +1,6 @@
 from flask import Flask, render_template, request
 import requests
 from bs4 import BeautifulSoup
-from mangum import Mangum  # para rodar no Vercel
 
 app = Flask(__name__)
 
@@ -29,10 +28,16 @@ def get_filmes(search_term=None):
                 titulo = titulo_tag.get_text(strip=True)
                 capa = capa_tag["src"] if capa_tag else None
 
+                filme_page = requests.get(filme_url, headers=HEADERS, timeout=10)
+                filme_soup = BeautifulSoup(filme_page.text, 'html.parser')
+                iframe = filme_soup.find("iframe")
+                video_link = iframe["src"] if iframe else None
+
                 filmes.append({
                     "titulo": titulo,
-                    "url": filme_url,  # link para página do filme
-                    "capa": capa
+                    "url": video_link,
+                    "capa": capa,
+                    "tmdb_link": f"https://www.themoviedb.org/search?query={titulo.replace(' ', '+')}"
                 })
 
     except Exception as e:
@@ -40,7 +45,7 @@ def get_filmes(search_term=None):
             "titulo": "Erro ao buscar filmes",
             "url": None,
             "capa": None,
-            "descricao": str(e),
+            "tmdb_link": "#"
         })
 
     return filmes
@@ -51,7 +56,13 @@ def index():
     filmes = get_filmes(search_term=search)
     return render_template("index.html", filmes=filmes, search=search)
 
-handler = Mangum(app)  # importante para o Vercel rodar o Flask como serverless
+@app.route('/favoritos')
+def favoritos():
+    # Essa página não carrega dados do servidor, só mostra a UI para gerenciar favoritos no localStorage.
+    return render_template("favoritos.html")
+
+if __name__ == '__main__':
+    app.run(debug=True)
 
 
 
